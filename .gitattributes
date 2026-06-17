@@ -1,0 +1,51 @@
+# Git attributes file itself.
+# Keep this file as LF even on Windows.
+.gitattributes text eol=lf
+
+# EditorConfig file itself.
+# Keep this file as LF even on Windows.
+.editorconfig text eol=lf
+
+# Python / project files.
+# These files should use LF for cross-platform consistency.
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.md text eol=lf
+*.rst text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.gitignore text eol=lf
+.python-version text eol=lf
+
+# Shell scripts must use LF.
+# CRLF may break execution on Linux / macOS.
+*.sh text eol=lf
+
+# Windows scripts should use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Text-based assets.
+# SVG is XML text, so it can be diffed as text.
+*.svg text eol=lf
+
+# Binary files.
+# Do not normalize line endings for binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.whl binary

@@ -1,0 +1,29 @@
+# EditorConfig helps editors keep consistent formatting.
+root = true
+
+# Default rules for all files.
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# Python files.
+[*.py]
+indent_style = space
+indent_size = 4
+
+# TOML / YAML / JSON usually use 2 spaces.
+[*.{toml,yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+# Markdown may intentionally use trailing spaces for line breaks.
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows scripts should use CRLF.
+[*.{bat,cmd,ps1}]
+end_of_line = crlf
