@@ -108,7 +108,7 @@ wheels = [
 ]
 
 [[package]]
-name = "elytra-compontent"
+name = "elytra-component"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

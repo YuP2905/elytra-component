@@ -7,6 +7,7 @@
 
 # Check files for myself
 /_check*.py
+/_check_outputs/
 
 # Byte-compiled / optimized files
 __pycache__/

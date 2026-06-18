@@ -5,7 +5,6 @@ from typing import (
     Union,
     Sequence,
     Optional,
-    Generator,
     cast,
     TYPE_CHECKING,
 )
@@ -21,7 +20,6 @@ if TYPE_CHECKING:
 
 from ladybug.sunpath import Sunpath
 from ladybug.datacollection import (
-    BaseCollection,
     HourlyContinuousCollection,
     HourlyDiscontinuousCollection,
 )
@@ -34,15 +32,17 @@ def create_sunpath(
 ) -> Sunpath:
     return Sunpath.from_location(
         location,
-        north,
+        int(north),
         dl_saving
     )
 
 def get_suns(
     sunpath: Sunpath,
-    hoys: Sequence[float | int],
+    hoys: Sequence[float | int] | float | int,
     solar_time: bool = False,
 ) -> Tuple["Sun", ...]:
+    hoys = (hoys,) if isinstance(hoys, (float, int)) else hoys
+
     suns: List["Sun"] = []
     for hoy in hoys:
         sun = sunpath.calculate_sun_from_hoy(
@@ -54,15 +54,6 @@ def get_suns(
 
     return tuple(suns)
 
-def get_sun_vectors(
-    suns: Sequence["Sun"],
-) -> Tuple["Vector3D", ...]:
-
-    return tuple(
-        sun.sun_vector
-        for sun in suns
-    )
-
 def get_sun_datetimes(
     suns: Sequence["Sun"],
 ) -> Tuple["DateTime", ...]:
@@ -72,11 +63,35 @@ def get_sun_datetimes(
         for sun in suns
     )
 
+def get_sun_vectors(
+    suns: Sequence["Sun"],
+) -> Tuple["Vector3D", ...]:
+
+    return tuple(
+        sun.sun_vector
+        for sun in suns
+    )
+
+def get_sun_points(
+    suns: Sequence["Sun"],
+) -> Tuple["Point3D", ...]:
+
+    points: List["Point3D"] = []
+    for sun in suns:
+        points.append(sun.position_3d())
+
+    return tuple(points)
+
 def get_sunpath_polylines(
     sunpath: Sunpath,
-    steps_per_month: int = 32,
+    steps_per_month: int = 10,
     solar_time: bool = False,
 ) -> Tuple["Polyline3D", ...]:
+    if steps_per_month < 1 or steps_per_month > 28:
+        raise ValueError(
+            "The steps_per_month must be between 1 and 28."
+        )
+
     sun_polylines = tuple(
         cast("Polyline3D", p_l)
         for p_l in sunpath.hourly_analemma_polyline3d(
@@ -90,48 +105,38 @@ def get_sunpath_arcs(
     sunpath: Sunpath,
     daily: bool = False,
     datetimes: Optional[Sequence["DateTime"]] = None,
-):
+) -> Tuple["Arc3D", ...]:
     if daily and datetimes is None:
         raise ValueError(
             "If daily is True, datetimes must be provided."
         )
 
-    if datetimes is not None:
+    if daily and datetimes is not None:
         dates = sorted(
             {
                 (dt.month, dt.day)
                 for dt in datetimes
             }
         )
-
-    sun_arcs = tuple(
-        cast(
-            "Arc3D",
-            sunpath.day_arc3d(
-                m,
-                d,
-            ),
+        return tuple(
+            cast(
+                "Arc3D",
+                sunpath.day_arc3d(
+                    m,
+                    d,
+                ),
+            )
+            for m, d in dates
         )
-        for m, d in dates
-    ) if daily and datetimes is not None else tuple(
+
+    return tuple(
         cast(
             "Arc3D",
             arc
         )
         for arc in sunpath.monthly_day_arc3d()
     )
-    return sun_arcs
 
-
-def get_sun_points(
-    suns: Sequence["Sun"],
-) -> Tuple["Point3D", ...]:
-
-    points: List["Point3D"] = []
-    for sun in suns:
-        points.append(sun.position_3d())
-
-    return tuple(points)
 
 def get_sun_altitudes_azimuths(
     suns: Sequence["Sun"],
@@ -145,19 +150,6 @@ def get_sun_altitudes_azimuths(
         al_az,
         dtype= np.float64
     ).T # shape (2, n): altitude, azimuth
-
-def filter_data_collection_by_statement(
-    data: Union["BaseCollection", Sequence["BaseCollection"]],
-    statement: str,
-) -> Union["BaseCollection", Sequence["BaseCollection"]]:
-    data = (data,) if isinstance(data, BaseCollection) else data
-
-    filtered_data: List["BaseCollection"] = BaseCollection.filter_collections_by_statement(
-        data,
-        statement,
-    )
-
-    return filtered_data[0] if len(filtered_data) == 1 else tuple(filtered_data)
 
 def align_hoys_by_hourly_data_collection(
     hoys: Sequence[float | int] | float | int,

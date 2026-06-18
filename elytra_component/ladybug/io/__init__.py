@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .io.weather import (
+from .weather import (
     download_weathers,
     open_epw_map,
     weather_to_ddy,

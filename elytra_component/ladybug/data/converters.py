@@ -44,23 +44,21 @@ def construct_data(
         values: A sequence of numerical values for the data collection.
         interval: Text to indicate the time interval of the data collection, which
             determines the type of collection that is output. (Default: hourly).
-            _
             Choose from the following:
                 - hourly
                 - daily
                 - monthly
                 - monthly-per-hour
-            _
             Note that the "hourly" input is also used to represent sub-hourly
             intervals (in this case, the timestep of the analysis period
             must not be 1).
     Returns:
         data: A Ladybug data collection object.
     """
-    interval = interval.lower()
+    interval_value = interval.lower()
 
     aper = header.analysis_period
-    if interval == "hourly":
+    if interval_value == "hourly":
 
         if aper.st_hour == 0 and aper.end_hour == 23:
             return HourlyContinuousCollection(
@@ -76,19 +74,19 @@ def construct_data(
                 aper.datetimes
             )
         )
-    elif interval == "monthly":
+    elif interval_value == "monthly":
         return MonthlyCollection(
             header,
             values,
             aper.months_int
         )
-    elif interval == "daily":
+    elif interval_value == "daily":
         return DailyCollection(
             header,
             values,
             aper.doys_int
         )
-    elif interval == "monthly-per-hour":
+    elif interval_value == "monthly-per-hour":
         return MonthlyPerHourCollection(
             header,
             values,
@@ -99,7 +97,7 @@ def construct_data(
         )
     else:
         raise ValueError(
-            f"Interval of '{interval}' is not supported. Please use one of "
+            f"Interval of '{interval_value}' is not supported. Please use one of "
             f"'hourly', 'daily', 'monthly', or 'monthly-per-hour'."
         )
 
@@ -122,7 +120,7 @@ def construct_data_type(
             data with this data type is visualized. The input should be
             text strings with a category number (integer) and name separated
             by a colon. For example:
-            _
+
             .    -1: Cold
             .     0: Neutral
             .     1: Hot
@@ -194,24 +192,25 @@ def construct_header(
         f"{accepted_types}"
     )
 
+    data_type_base: DataTypeBase
     if isinstance(data_type, DataTypeBase):
-        data_type = data_type
+        data_type_base = data_type
     elif isinstance(data_type, str):
-        data_type = data_type.replace(" ", "")
+        data_type_key = data_type.replace(" ", "").lower()
         try:
-            data_type = data_type.lower()
-            data_type = ladybug.datatype.TYPESDICT[data_type]()
+            data_type_base = ladybug.datatype.TYPESDICT[data_type_key]()
         except KeyError:
-            data_type = data_type.lower()
             for k in ladybug.datatype.TYPESDICT:
                 k = cast(str, k)
-                if k.lower() == data_type:
-                    data_type = ladybug.datatype.TYPESDICT[k]()
+                if k.lower() == data_type_key:
+                    data_type_base = ladybug.datatype.TYPESDICT[k]()
                     break
             else:
                 raise TypeError(msg)
+    else:
+        raise TypeError(msg)
 
-    unit = unit or data_type.units[0]
+    unit = unit or data_type_base.units[0]
     a_period = a_period or AnalysisPeriod()
 
     metadata_dict = {}
@@ -228,9 +227,8 @@ def construct_header(
                 ) from e
 
     return Header(
-        cast(DataTypeBase, data_type),
+        cast(DataTypeBase, data_type_base),
         cast(str, unit),
         a_period,
         metadata_dict
     )
-

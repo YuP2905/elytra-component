@@ -1,22 +1,24 @@
 from __future__ import annotations
 from typing import (
     List,
-    Tuple,
     Optional,
     Sequence,
+    Tuple,
     cast,
     TYPE_CHECKING,
 )
+import os
+
+from numba import get_num_threads, njit, prange, set_num_threads
+import numpy as np
+
+from ..array import points_vectors_2_array
+
 if TYPE_CHECKING:
     from ladybug_geometry.geometry3d.mesh import Mesh3D
     from ladybug_geometry.geometry3d.pointvector import Point3D, Vector3D
     from numpy.typing import NDArray
 
-from numba import get_num_threads, njit, prange, set_num_threads
-from ..array import points_vectors_2_array
-
-import numpy as np
-import os
 
 @njit(parallel=True, cache=True)
 def _analyze_sun_hours(
@@ -27,6 +29,7 @@ def _analyze_sun_hours(
     geo_block: bool,
     eps: float,
 ) -> "NDArray[np.uint8]":
+    """Calculate visible sun vectors for each point with triangle blockers."""
     n_points = points_arr.shape[0]
     n_vectors = rev_vectors_arr.shape[0]
     n_triangles = triangles_arr.shape[0]
@@ -133,10 +136,11 @@ def _analyze_sun_hours(
 
     return int_matrix
 
+
 def analyze_sun_hours(
     vectors: Tuple["Vector3D", ...],
-    geometry: Mesh3D,
-    context: Optional[Sequence[Mesh3D]] = None,
+    geometry: "Mesh3D",
+    context: Optional[Sequence["Mesh3D"]] = None,
     timestep: int = 1,
     offset_dist: Optional[float] = None,
     geo_block: bool = True,
@@ -144,8 +148,25 @@ def analyze_sun_hours(
 ) -> Tuple[
     Tuple["Point3D", ...],
     "NDArray[np.float32]",
-    NDArray[np.uint8]
+    "NDArray[np.uint8]",
 ]:
+    """Analyze direct sun hours on a Ladybug Mesh3D.
+
+    Args:
+        vectors: Sun vectors from Ladybug sun objects.
+        geometry: Study mesh. Face centroids become analysis points.
+        context: Optional context meshes that block rays.
+        timestep: Number of timesteps per hour.
+        offset_dist: Point offset distance along mesh face normals.
+        geo_block: Whether the study geometry also blocks rays.
+        cpu_count: Optional numba worker count.
+
+    Returns:
+        A tuple containing:
+        - points: Offset analysis points.
+        - results: Sun-hour result for each point.
+        - int_matrix: Visibility matrix with shape ``(point_count, vector_count)``.
+    """
     timestep = 1 if timestep is None else timestep
     if timestep < 1:
         raise ValueError(
@@ -165,35 +186,49 @@ def analyze_sun_hours(
             "The cpu_count must be a positive integer."
         )
 
-    workers = min(workers,  get_num_threads())
+    workers = min(
+        workers,
+        get_num_threads(),
+    )
     set_num_threads(workers)
 
-    context = tuple() if context is None else tuple(context)
+    context_meshes = tuple() if context is None else tuple(context)
 
-    geom_face_cen = cast(Tuple["Point3D", ...], geometry.face_centroids)
+    geom_face_centroids = cast(Tuple["Point3D", ...], geometry.face_centroids)
     geom_face_normals = cast(Tuple["Vector3D", ...], geometry.face_normals)
     points = tuple(
-        pt.move(vec * offset_dist)
-        for pt, vec in zip(geom_face_cen, geom_face_normals)
+        point.move(vector * offset_dist)
+        for point, vector in zip(
+            geom_face_centroids,
+            geom_face_normals,
+        )
     )
-    rev_vectors = tuple(vec.reverse() for vec in vectors)
+    rev_vectors = tuple(
+        vector.reverse()
+        for vector in vectors
+    )
 
     points_arr = points_vectors_2_array(points)
     geom_face_normals_arr = points_vectors_2_array(geom_face_normals)
     rev_vectors_arr = points_vectors_2_array(rev_vectors)
 
-    shade_meshes = (geometry, *context) if geo_block else context
+    shade_meshes = (geometry, *context_meshes) if geo_block else context_meshes
 
-    triangles: List[Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]] = []
+    triangles: List[
+        Tuple[
+            Tuple[float, float, float],
+            Tuple[float, float, float],
+            Tuple[float, float, float],
+        ]
+    ] = []
     for mesh in shade_meshes:
-        for f_vertex in mesh.face_vertices:
-            vertices = cast(Tuple["Point3D", ...], f_vertex)
+        for face_vertices in mesh.face_vertices:
+            vertices = cast(Tuple["Point3D", ...], face_vertices)
 
             if len(vertices) < 3:
                 continue
 
             p0 = vertices[0]
-
             for i in range(1, len(vertices) - 1):
                 p1 = vertices[i]
                 p2 = vertices[i + 1]
@@ -206,16 +241,17 @@ def analyze_sun_hours(
                     )
                 )
 
-    if len(triangles) == 0:
-        triangles_arr = np.zeros(
+    triangles_arr = (
+        np.zeros(
             (0, 3, 3),
             dtype=np.float64,
         )
-    else:
-        triangles_arr = np.asarray(
+        if len(triangles) == 0
+        else np.asarray(
             triangles,
             dtype=np.float64,
         )
+    )
 
     int_matrix = _analyze_sun_hours(
         points_arr,
