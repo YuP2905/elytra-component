@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import (
-    Tuple,
     Final,
+    Tuple,
     cast,
     get_args,
 )

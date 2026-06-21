@@ -8,14 +8,11 @@ from typing import (
 )
 from urllib.parse import unquote, urlparse
 from urllib.request import urlretrieve
-import webbrowser
 
 from ladybug.config import folders
 from ladybug.epw import EPW
 from ladybug.futil import unzip_file
 from ladybug.stat import STAT
-
-from ..config import LADYBUG_CONFIG
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -23,47 +20,19 @@ if TYPE_CHECKING:
     from ..typing import WeatherFilePaths
 
 
-def open_epw_map(
-    is_open: bool = False,
-    epw_map_url: Optional[str] = None,
-) -> None:
-    """
-    Oepn the EPW map in a web browser.
-    Args:
-        is_open: Whether to open the EPW map in a web browser.
-        epw_map_url: The URL of the EPW map to open. If None, the default EPW map URL will be used.
-    Returns:
-        None
-    """
-    map_url = epw_map_url or LADYBUG_CONFIG.DEFAULT_EPW_MAP_URL
-    if is_open:
-        webbrowser.open(
-            map_url,
-            new=2,
-            autoraise=True,
-        )
-
-
 def download_weathers(
     weather_url: str,
     folder: Optional[Union["PathLike[str]", str]] = None,
 ) -> "WeatherFilePaths":
-    """
-    Automatically download a .zip file from a URL where climate data resides,
-    unzip the file, and open .epw, .stat, and ddy weather files.
-        Args:
-            weather_URL: Text representing the URL at which the climate data resides.
-                To open the a map interface for all publicly availabe climate data,
-                use the "LB EPWmap" component.
-            folder: An optional file path to a directory into which the weather file
-                will be downloaded and unziped.  If None, the weather files will be
-                downloaded to the ladybug default weather data folder and placed in
-                a sub-folder with the name of the weather file location.
+    """Download EPW weather files from an EnergyPlus weather URL.
 
-        Returns:
-            epw_file: The file path of the downloaded epw file.
-            stat_file: The file path of the downloaded stat file.
-            ddy_file: The file path of the downloaded ddy file.
+    Args:
+        weather_url: URL ending with ``.epw``, ``.zip``, or ``/all``.
+        folder: Optional download folder. Defaults to the Ladybug weather
+            data folder.
+
+    Returns:
+        A tuple containing EPW path, optional STAT path, and optional DDY path.
     """
     weather_url = weather_url.strip()
     if not weather_url:
@@ -77,11 +46,9 @@ def download_weathers(
     # Region \ Country \ State/Province/Prefecture \ xxx.epw or xxx.zip or all
     url_path = Path(url_path)
 
-    # |  url   | suffix |  name   | stem |
-    # | :----: | :----: | :-----: | :--: |
-    # | xx.epw |  .epw  | xxx.epw | xxx  |
-    # | xx.zip |  .zip  | xxx.zip | xxx  |
-    # |  /all  |        |   all   | all  |
+    # url=xx.epw, suffix=.epw, name=xxx.epw, stem=xxx
+    # url=xx.zip, suffix=.zip, name=xxx.zip, stem=xxx
+    # url=/all, suffix empty, name=all, stem=all
     weather_suffix = url_path.suffix.lower()
     weather_stem = url_path.stem
     download_file_name = url_path.name
@@ -178,7 +145,17 @@ def weather_to_ddy(
     monthly_cool: bool = False,
     folder: Optional[Union["PathLike[str]", str]] = None,
 ) -> Path:
-    """Create a DDY file from an EPW or STAT weather file."""
+    """Create a DDY file from an EPW or STAT weather file.
+
+    Args:
+        weather_file: EPW or STAT weather file.
+        percentile: Heating and cooling design day percentile.
+        monthly_cool: Whether to create monthly cooling design days.
+        folder: Optional output folder.
+
+    Returns:
+        Generated DDY file path.
+    """
     weather_path = Path(weather_file)
     if not weather_path.is_file():
         raise FileNotFoundError(

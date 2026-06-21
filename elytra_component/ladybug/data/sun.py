@@ -2,11 +2,12 @@ from __future__ import annotations
 from typing import (
     List,
     Optional,
-    Sequence,
     Tuple,
+    Union,
     cast,
     TYPE_CHECKING,
 )
+from collections.abc import Sequence
 
 from ladybug.sunpath import Sunpath
 import numpy as np
@@ -27,20 +28,39 @@ def create_sunpath(
     north: float = 0.0,
     dl_saving: Optional["AnalysisPeriod"] = None,
 ) -> Sunpath:
-    """Create a Ladybug Sunpath from a Ladybug location."""
+    """Create a Ladybug Sunpath from a Ladybug location.
+
+    Args:
+        location: Ladybug location.
+        north: North angle in degrees.
+        dl_saving: Optional daylight saving analysis period.
+
+    Returns:
+        Ladybug Sunpath object.
+    """
     return Sunpath.from_location(
         location,
-        cast(int, north),
+        # don't use cast!
+        north,  # pyright: ignore[reportArgumentType]
         dl_saving,
     )
 
 
 def get_suns(
     sunpath: Sunpath,
-    hoys: Sequence[float | int],
+    hoys: Sequence[Union[float, int]],
     solar_time: bool = False,
 ) -> Tuple["Sun", ...]:
-    """Calculate daytime suns for hours of year."""
+    """Calculate daytime suns for hours of year.
+
+    Args:
+        sunpath: Ladybug Sunpath object.
+        hoys: Hours of year.
+        solar_time: Whether to use solar time.
+
+    Returns:
+        Sun objects that are above the horizon.
+    """
     suns: List["Sun"] = []
     for hoy in hoys:
         sun = sunpath.calculate_sun_from_hoy(
@@ -56,7 +76,14 @@ def get_suns(
 def get_sun_vectors(
     suns: Sequence["Sun"],
 ) -> Tuple["Vector3D", ...]:
-    """Return Ladybug sun vectors from suns."""
+    """Return Ladybug sun vectors from suns.
+
+    Args:
+        suns: Sun objects.
+
+    Returns:
+        Sun direction vectors.
+    """
     return tuple(
         sun.sun_vector
         for sun in suns
@@ -66,7 +93,14 @@ def get_sun_vectors(
 def get_sun_datetimes(
     suns: Sequence["Sun"],
 ) -> Tuple["DateTime", ...]:
-    """Return Ladybug datetimes from suns."""
+    """Return Ladybug datetimes from suns.
+
+    Args:
+        suns: Sun objects.
+
+    Returns:
+        Ladybug DateTime values from the sun objects.
+    """
     return tuple(
         cast("DateTime", sun.datetime)
         for sun in suns
@@ -78,7 +112,16 @@ def get_sunpath_polylines(
     steps_per_month: int = 10,
     solar_time: bool = False,
 ) -> Tuple["Polyline3D", ...]:
-    """Return hourly analemma polylines for a sunpath."""
+    """Return hourly analemma polylines for a sunpath.
+
+    Args:
+        sunpath: Ladybug Sunpath object.
+        steps_per_month: Number of interpolation steps per month.
+        solar_time: Whether to use solar time.
+
+    Returns:
+        Hourly analemma polylines.
+    """
     if steps_per_month < 1 or steps_per_month > 28:
         raise ValueError(
             "The steps_per_month must be between 1 and 28."
@@ -98,7 +141,16 @@ def get_sunpath_arcs(
     daily: bool = False,
     datetimes: Optional[Sequence["DateTime"]] = None,
 ) -> Tuple["Arc3D", ...]:
-    """Return monthly or selected daily sunpath arcs."""
+    """Return monthly or selected daily sunpath arcs.
+
+    Args:
+        sunpath: Ladybug Sunpath object.
+        daily: Whether to return arcs only for dates in ``datetimes``.
+        datetimes: DateTime values used when ``daily`` is true.
+
+    Returns:
+        Sunpath day arcs.
+    """
     if daily and datetimes is None:
         raise ValueError(
             "If daily is True, datetimes must be provided."
@@ -134,7 +186,14 @@ def get_sunpath_arcs(
 def get_sun_points(
     suns: Sequence["Sun"],
 ) -> Tuple["Point3D", ...]:
-    """Return 3D positions for suns."""
+    """Return 3D positions for suns.
+
+    Args:
+        suns: Sun objects.
+
+    Returns:
+        Sun position points.
+    """
     return tuple(
         sun.position_3d()
         for sun in suns
@@ -144,7 +203,14 @@ def get_sun_points(
 def get_sun_altitudes_azimuths(
     suns: Sequence["Sun"],
 ) -> "NDArray[np.float64]":
-    """Return a ``(2, n)`` array ordered as altitude and azimuth."""
+    """Return sun altitude and azimuth values.
+
+    Args:
+        suns: Sun objects.
+
+    Returns:
+        Float64 array with shape ``(2, n)`` ordered as altitude and azimuth.
+    """
     altitude_azimuth: List[Tuple[float, float]] = []
     for sun in suns:
         altitude_azimuth.append(

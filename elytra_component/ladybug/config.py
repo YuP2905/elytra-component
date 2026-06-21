@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import (
-    Tuple,
     Final,
+    Tuple,
     TYPE_CHECKING,
 )
 if TYPE_CHECKING:
@@ -27,8 +27,8 @@ _DEFAULT_EPW_MAP_URL = "https://www.ladybug.tools/epwmap/"
 @dataclass(frozen=True, slots=True)
 class LadybugConfig:
     DEFAULT_EPW_MAP_URL: Final[str]
-    LADYBUG_COLORSET_NAMES: Final[Tuple[LadybugColorSetName, ...]]
-    DEFAULT_COLORSET: Final[LadybugColorSetName]
+    LADYBUG_COLORSET_NAMES: Final[Tuple["LadybugColorSetName", ...]]
+    DEFAULT_COLORSET: Final["LadybugColorSetName"]
     DEFAULT_CMAP: Final["LinearSegmentedColormap"]
 
 

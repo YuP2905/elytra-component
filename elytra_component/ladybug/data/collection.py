@@ -1,17 +1,15 @@
 from __future__ import annotations
 from typing import (
     List,
-    Sequence,
     Tuple,
     Union,
     cast,
     TYPE_CHECKING,
 )
+from collections.abc import Mapping, Sequence
 
 from ladybug.datacollection import (
     BaseCollection,
-    DailyCollection,
-    MonthlyCollection,
     MonthlyPerHourCollection,
     HourlyContinuousCollection,
     HourlyDiscontinuousCollection,
@@ -27,11 +25,17 @@ if TYPE_CHECKING:
     from ladybug.datatype.base import DataTypeBase
     from numpy.typing import NDArray
 
-    from ..typing import DataDateTimeValue, HourlyDataCollection, LadybugDataCollection
+    from ..typing import (
+        DataDateTimeValue,
+        HeaderMetadataValue,
+        HourlyDataCollection,
+        LadybugDataCollection,
+    )
+
 
 
 def deconstruct_data(
-    data: "BaseCollection",
+    data: BaseCollection,
 ) -> Tuple["Header", Tuple[float, ...]]:
     """Deconstruct a Ladybug data collection into header and values.
 
@@ -46,10 +50,8 @@ def deconstruct_data(
     return (
         data.header,
         tuple(
-            float(
-                cast(float, value)
-            )
-            for value in data.values
+            float(value)
+            for value in cast(Sequence[Union[float, int]], data.values)
         ),
     )
 
@@ -64,14 +66,15 @@ def deconstruct_header(
 
     Returns:
         A tuple containing:
-        - data_type: Ladybug data type object.
+        - data_type: Ladybug data type.
         - unit: Header unit.
         - analysis_period: Header analysis period.
         - metadata: Metadata entries formatted as ``key: value``.
     """
+    metadata_values = cast("Mapping[str, HeaderMetadataValue]", header.metadata)
     metadata = tuple(
         f"{key}: {value}"
-        for key, value in header.metadata.items()
+        for key, value in metadata_values.items()
     )
     return (
         header.data_type,
@@ -86,46 +89,57 @@ def data_datetimes(
 ) -> Tuple["DataDateTimeValue", ...]:
     """Return the hour, day, or month values associated with collection values.
 
-    This mirrors the useful output of Ladybug Grasshopper's ``LB Data DateTimes``
-    without depending on Grasshopper data trees.
+    Args:
+        data: Ladybug data collection.
+
+    Returns:
+        DateTime, HOY, or monthly hour values associated with the collection.
     """
     if isinstance(data, HourlyDiscontinuousCollection):
+        datetimes = cast(Sequence["DateTime"], data.datetimes)
         return tuple(
-            cast("DateTime", dt).hoy
-            for dt in data.datetimes
-        )
-
-    if isinstance(data, (MonthlyCollection, DailyCollection)):
-        return tuple(
-            cast(Tuple["DateTime"], data.datetimes)
+            dt.hoy
+            for dt in datetimes
         )
 
     if isinstance(data, MonthlyPerHourCollection):
+        datetimes = cast(Sequence["DateTime"], data.datetimes)
         return tuple(
             DateTime(
-                month = cast("DateTime", dt).month,
-                day = 1,
-                hour=cast("DateTime", dt).hour,
-                minute=cast("DateTime", dt).minute,
+                month=dt.month,
+                day=1,
+                hour=dt.hour,
+                minute=dt.minute,
             ).hoy
-            for dt in data.datetimes
-        )
-    if isinstance(data, HourlyContinuousCollection):
-        return tuple(
-            cast("DateTime", dt).hoy
-            for dt in cast("HourlyContinuousCollection", data).datetimes
+            for dt in datetimes
         )
 
-    raise TypeError(
-        f"Expected Ladybug data collection. Got {type(data)}."
+    if isinstance(data, HourlyContinuousCollection):
+        datetimes = cast(Sequence["DateTime"], data.datetimes)
+        return tuple(
+            dt.hoy
+            for dt in datetimes
+        )
+
+    return tuple(
+        cast(Sequence["DateTime"], data.datetimes)
     )
 
 
 def filter_data_collection_by_statement(
-    data: Union["BaseCollection", Sequence["BaseCollection"]],
+    data: Union[BaseCollection, Sequence[BaseCollection]],
     statement: str,
-) -> Union["BaseCollection", Tuple["BaseCollection", ...]]:
-    """Filter one or more Ladybug data collections by a statement."""
+) -> Union[BaseCollection, Tuple[BaseCollection, ...]]:
+    """Filter one or more Ladybug data collections by a statement.
+
+    Args:
+        data: One collection or aligned collections.
+        statement: Ladybug conditional statement.
+
+    Returns:
+        One filtered collection when one collection is supplied, otherwise a
+        tuple of filtered collections.
+    """
     data_collections = (data,) if isinstance(data, BaseCollection) else tuple(data)
     filtered_data = cast(
         List["BaseCollection"],
@@ -139,10 +153,18 @@ def filter_data_collection_by_statement(
 
 
 def align_hoys_by_hourly_data_collection(
-    hoys: Union[Sequence[float | int], float, int],
+    hoys: Union[Sequence[Union[float, int]], float, int],
     data: Union["HourlyDataCollection", Sequence["HourlyDataCollection"]],
 ) -> "NDArray[np.float64]":
-    """Return HOYs that exist in one or more aligned hourly collections."""
+    """Return HOYs that exist in one or more aligned hourly collections.
+
+    Args:
+        hoys: One HOY or multiple HOY values.
+        data: One hourly collection or aligned hourly collections.
+
+    Returns:
+        Float64 array of HOY values that exist in the hourly collection data.
+    """
     hoy_values = (hoys,) if isinstance(hoys, (float, int)) else tuple(hoys)
     if isinstance(
         data,
@@ -166,9 +188,10 @@ def align_hoys_by_hourly_data_collection(
                 "The data collections are not aligned."
             )
 
+    first_data_datetimes = cast(Sequence["DateTime"], first_data.datetimes)
     data_hoys = {
-        cast("DateTime", datetime).hoy
-        for datetime in first_data.datetimes
+        datetime.hoy
+        for datetime in first_data_datetimes
     }
     aligned_hoys = tuple(
         hoy
@@ -186,7 +209,16 @@ def align_hourly_data_collection_by_suns(
     data: Union["HourlyDataCollection", Sequence["HourlyDataCollection"]],
     suns: Sequence["Sun"],
 ) -> Union["HourlyDataCollection", Tuple["HourlyDataCollection", ...]]:
-    """Filter hourly collections to the datetimes represented by suns."""
+    """Filter hourly collections to the datetimes represented by suns.
+
+    Args:
+        data: One hourly collection or aligned hourly collections.
+        suns: Sun objects whose datetimes define the filter.
+
+    Returns:
+        One filtered hourly collection when one collection is supplied,
+        otherwise a tuple of filtered hourly collections.
+    """
     if isinstance(
         data,
         (

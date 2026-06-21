@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import (
     List,
-    Sequence,
     Tuple,
     Union,
     cast,
     TYPE_CHECKING,
 )
+from collections.abc import Sequence
 
 from ladybug_geometry.geometry2d.pointvector import Point2D, Vector2D
 from ladybug_geometry.geometry3d.plane import Plane
@@ -33,7 +33,14 @@ def points_vectors_2_array(
         "LadybugPointVector",
     ],
 ) -> "NDArray[np.float64]":
-    """Convert Ladybug points or vectors to a float64 coordinate array."""
+    """Convert Ladybug point or vector objects to a coordinate array.
+
+    Args:
+        points_vectors: One point or vector, or a sequence of points or vectors.
+
+    Returns:
+        A float64 coordinate array.
+    """
     if isinstance(
         points_vectors,
         (
@@ -59,7 +66,14 @@ def points_vectors_2_array(
 def locations_to_array(
     locations: Sequence[Union[Point2D, Point3D, Plane]],
 ) -> "NDArray[np.float64]":
-    """Convert Ladybug points or plane origins to a coordinate array."""
+    """Convert Ladybug point locations or plane origins to a coordinate array.
+
+    Args:
+        locations: Points or planes. Plane inputs use their origin points.
+
+    Returns:
+        A float64 coordinate array.
+    """
     points: List[Union[Point2D, Point3D]] = []
     for loc in locations:
         points.append(
@@ -74,15 +88,21 @@ def locations_to_array(
 def mesh_face_arrays(
     mesh: Union["Mesh2D", "Mesh3D"],
 ) -> Tuple["NDArray[np.float64]", ...]:
-    """Convert every Ladybug mesh face to a coordinate array."""
+    """Convert every Ladybug mesh face to a coordinate array.
+
+    Args:
+        mesh: Ladybug 2D or 3D mesh.
+
+    Returns:
+        Face coordinate arrays ordered by mesh face order.
+    """
+    face_vertices = cast(
+        Sequence[Sequence[Union[Point2D, Point3D]]],
+        mesh.face_vertices,
+    )
     return tuple(
-        points_vectors_2_array(
-            cast(
-                Tuple[Union[Point2D, Point3D], ...],
-                f_vert,
-            )
-        )
-        for f_vert in mesh.face_vertices
+        points_vectors_2_array(f_vert)
+        for f_vert in face_vertices
     )
 
 
@@ -95,29 +115,41 @@ def geometry_to_array(
         "Polyline3D",
     ],
 ) -> "NDArray[np.float64]":
-    """Convert an ordered Ladybug line geometry to one coordinate array."""
+    """Convert ordered Ladybug line or polygon geometry to coordinates.
+
+    Args:
+        geometry: Ladybug line segment, polyline, or 2D polygon.
+
+    Returns:
+        A float64 coordinate array ordered along the geometry boundary.
+    """
     segments = cast(
-        Sequence[Union["LineSegment2D", "LineSegment3D", "Polyline2D", "Polyline3D"]],
-        geometry.segments
+        "Sequence[Union[LineSegment2D, LineSegment3D, Polyline2D, Polyline3D]]",
+        geometry.segments,
+    )
+    points: List[Union[Point2D, Point3D]] = [
+        cast(Union[Point2D, Point3D], segments[0].p1),
+    ]
+    points.extend(
+        cast(Union[Point2D, Point3D], segment.p2)
+        for segment in segments
     )
     return points_vectors_2_array(
-        (
-            cast(Union[Point2D, Point3D], segments[0].p1),
-            *cast(
-                Tuple[Union[Point2D, Point3D], ...],
-                tuple(
-                    cast(Union[Point2D, Point3D], segment.p2)
-                    for segment in segments
-                )
-            ),
-        )
+        points
     )
 
 
 def coordinates_to_2d(
     coordinates: "NDArray[np.float64]",
 ) -> "NDArray[np.float64]":
-    """Return XY coordinates from a 2D or 3D coordinate array."""
+    """Return XY coordinates from a 2D or 3D coordinate array.
+
+    Args:
+        coordinates: Coordinate array with shape ``(n, 2)`` or ``(n, 3)``.
+
+    Returns:
+        Coordinate array with shape ``(n, 2)``.
+    """
     if coordinates.ndim != 2 or coordinates.shape[1] not in (2, 3):
         raise ValueError(
             "Coordinates must have shape (n, 2) or (n, 3)."
@@ -136,18 +168,27 @@ def coordinates_to_3d(
     coordinates: "NDArray[np.float64]",
     z: float = 0.0,
 ) -> "NDArray[np.float64]":
-    """Return XYZ coordinates, embedding 2D coordinates at a Z value."""
+    """Return XYZ coordinates, embedding 2D coordinates at a Z value.
+
+    Args:
+        coordinates: Coordinate array with shape ``(n, 2)`` or ``(n, 3)``.
+        z: Z value used when embedding 2D coordinates.
+
+    Returns:
+        Coordinate array with shape ``(n, 3)``.
+    """
     if coordinates.ndim != 2 or coordinates.shape[1] not in (2, 3):
         raise ValueError(
             "Coordinates must have shape (n, 2) or (n, 3)."
-        )
+    )
     if coordinates.shape[1] == 3:
         return coordinates
+    n_rows = int(coordinates.shape[0])
     return np.column_stack(
         (
             coordinates,
             np.full(
-                coordinates.shape[0],
+                n_rows,
                 z,
                 dtype=np.float64,
             ),

@@ -1,84 +1,63 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import (
-    Protocol,
+    Literal,
+    Optional,
     Tuple,
     Union,
-    Literal,
     TYPE_CHECKING,
 )
-from ladybug.datacollection import (
-    DailyCollection,
-    HourlyContinuousCollection,
-    HourlyDiscontinuousCollection,
-    MonthlyCollection,
-    MonthlyPerHourCollection,
-)
-from ladybug.dt import DateTime
-from ladybug_geometry.geometry2d.pointvector import Point2D, Vector2D
-from ladybug_geometry.geometry3d.pointvector import Point3D, Vector3D
-
 if TYPE_CHECKING:
-    from matplotlib.text import Text
+    from ladybug.datacollection import (
+        BaseCollection,
+        DailyCollection,
+        HourlyContinuousCollection,
+        HourlyDiscontinuousCollection,
+        MonthlyCollection,
+        MonthlyPerHourCollection,
+    )
+    from ladybug.dt import DateTime
+    from ladybug_geometry.geometry2d.pointvector import Point2D, Vector2D
+    from ladybug_geometry.geometry3d.pointvector import Point3D, Vector3D
 
-
-class MatplotlibTextMethod(Protocol):
-    """Callable interface shared by 2D and 3D matplotlib text methods."""
-
-    def __call__(
-        self,
-        *args: Union[float, str],
-        **kwargs: object,
-    ) -> "Text":
-        ...
+type HeaderMetadataValue = Optional[Union[str, float, int, bool]]
 
 type LadybugDataCollection = Union[
-    DailyCollection,
-    HourlyContinuousCollection,
-    HourlyDiscontinuousCollection,
-    MonthlyCollection,
-    MonthlyPerHourCollection,
+    "DailyCollection",
+    "HourlyContinuousCollection",
+    "HourlyDiscontinuousCollection",
+    "MonthlyCollection",
+    "MonthlyPerHourCollection",
 ]
 
 type HourlyDataCollection = Union[
-    HourlyContinuousCollection,
-    HourlyDiscontinuousCollection,
+    "HourlyContinuousCollection",
+    "HourlyDiscontinuousCollection",
 ]
 
 type WeatherFilePaths = Tuple[
     Path,
-    Union[Path, None],
-    Union[Path, None],
+    Optional[Path],
+    Optional[Path],
 ]
 
-type MatplotlibColor = Union[
-    str,
-    Tuple[float, float, float],
-    Tuple[float, float, float, float],
-]
+type NumericDataInput = Union["BaseCollection", float, int]
 
-type ColorbarOrientation = Literal[
-    "horizontal",
-    "vertical",
-]
+type NumericDataValue = Union["BaseCollection", float, int]
 
-type MatplotlibTickAxis = Literal[
-    "x",
-    "y",
+type WindTerrain = Union[
+    Literal["city", "suburban", "country", "water"],
+    Literal[0, 1, 2, 3],
 ]
 
 type LadybugPointVector = Union[
-    Point2D,
-    Vector2D,
-    Point3D,
-    Vector3D,
+    "Point2D",
+    "Vector2D",
+    "Point3D",
+    "Vector3D",
 ]
 
-type DataDateTimeValue = Union[
-    DateTime,
-    float,
-    int,
-]
+type DataDateTimeValue = Union["DateTime", float, int]
 
 type DataInterval = Literal[
     "hourly",
