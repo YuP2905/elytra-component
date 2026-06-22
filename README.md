@@ -1,6 +1,6 @@
 <img src="assets/logo.svg" alt="Elytra Component logo" width="160" style="margin: 20px;" />
 
-[![PyPI version](https://img.shields.io/badge/pypi-v0.1.0-orange)](https://pypi.org/project/elytra-component/) [![Python version](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/release/python-3120/) [![Documentation](https://img.shields.io/badge/docs-README-brightgreen)](#installation)
+[![GitHub repository](https://img.shields.io/badge/GitHub-elytra--component-181717)](https://github.com/YuP2905/elytra-component) [![Python version](https://img.shields.io/badge/python-3.12-blue)](https://www.python.org/downloads/release/python-3120/) [![Documentation](https://img.shields.io/badge/docs-README-brightgreen)](#installation)
 
 `elytra-component` is a Python toolkit for batch building performance simulation. It is used to run Honeybee Energy and Honeybee Radiance workflows outside Rhino and Grasshopper.
 
@@ -25,11 +25,33 @@ This package uses existing HBJSON files as input. HBJSON files can come from Rhi
 
 ## Installation
 
+Install the latest version directly from GitHub with `pip`:
+
 ```cmd
-pip install elytra-component
+pip install git+https://github.com/YuP2905/elytra-component.git
 ```
 
-This command installs `elytra-component` and its Python dependencies.
+For projects managed by `uv`:
+
+```cmd
+uv add git+https://github.com/YuP2905/elytra-component.git
+```
+
+To download the source code and install it locally:
+
+```cmd
+git clone https://github.com/YuP2905/elytra-component.git
+cd elytra-component
+pip install .
+```
+
+For an editable development installation:
+
+```cmd
+pip install -e .
+```
+
+These commands install `elytra-component` and its Python dependencies from the GitHub repository. Python 3.12 is required.
 
 The Python package itself does not include the OpenStudio, EnergyPlus, or Radiance runtimes. To run new Energy or Radiance simulations, make sure the target environment already has the corresponding simulation engines installed and configured.
 
