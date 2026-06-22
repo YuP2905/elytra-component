@@ -258,6 +258,8 @@ def shadow_calculation(
 
     calc_method = "PolygonClipping" if calc_method is None else calc_method
     update_method = "Periodic" if update_method is None else update_method
+    frequency = 30 if frequency is None else frequency
+    max_figures = 15000 if max_figures is None else max_figures
 
     return ShadowCalculation(
         solar_dist,
@@ -359,7 +361,7 @@ def simulation_parameter(
     Returns:
         A Honeybee Energy simulation parameter object.
     """
-    north = 0 if north is None else north
+    north_value = 0.0 if north is None else north
 
     if output is None:
         output = SimulationOutput()
@@ -367,13 +369,13 @@ def simulation_parameter(
         output.add_hvac_energy_use()
 
     if run_period is None:
-        run_period = RunPeriod()
+        run_period_obj = RunPeriod()
     else:
-        run_period = RunPeriod.from_analysis_period(run_period)
+        run_period_obj = RunPeriod.from_analysis_period(run_period)
 
 
     if daylight_saving is not None:
-        cast("RunPeriod", run_period).daylight_saving_time = (
+        run_period_obj.daylight_saving_time = (
             DaylightSavingTime.from_analysis_period(
                 daylight_saving
             )
@@ -390,25 +392,25 @@ def simulation_parameter(
                 DateTime.from_date_time_string(date).date
                 for date in holidays
             )
-        cast("RunPeriod", run_period).holidays = dates
+        run_period_obj.holidays = dates
 
     if start_dow is not None:
-        cast("RunPeriod", run_period).start_day_of_week = start_dow.title()
+        run_period_obj.start_day_of_week = start_dow.title()
 
-    timestep = 6 if run_period is None else timestep
-    terrain ="City" if terrain is None else terrain.title()
+    timestep_value = 6 if timestep is None else timestep
+    terrain_value = "City" if terrain is None else terrain.title()
 
     sim_par = SimulationParameter(
         output=output,
-        run_period=run_period,
-        timestep=timestep,
+        run_period=run_period_obj,
+        timestep=timestep_value,
         simulation_control=simulation_control,
         shadow_calculation=shadow_calculation,
         sizing_parameter=sizing_parameter,
-        north_angle=north,
-        terrain_type=terrain,
+        north_angle=north_value,  # pyright: ignore[reportArgumentType]
+        terrain_type=terrain_value,
     )
 
-    sim_par.north_angle = float(north)
+    sim_par.north_angle = north_value
 
     return sim_par

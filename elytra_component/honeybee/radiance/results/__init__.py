@@ -6,7 +6,10 @@ from .annual import (
     read_annual_raw,
     read_metric_folder,
 )
-from .common import load_res
+from .common import (
+    load_res,
+    read_res_folder,
+)
 from .pit import (
     read_pit_folder,
     read_pit_grid,
@@ -15,6 +18,7 @@ from .pit import (
 
 __all__ = (
     "load_res",
+    "read_res_folder",
     "read_annual_group",
     "read_annual_metrics",
     "read_annual_raw",

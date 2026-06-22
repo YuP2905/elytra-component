@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .paramters import (
+from .parameters import (
     custom_simulation_output,
     shadow_calculation,
     simulation_control,

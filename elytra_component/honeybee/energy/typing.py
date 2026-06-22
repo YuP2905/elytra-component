@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import (
     List,
+    Tuple,
     Union,
     Dict,
     Literal,
@@ -293,3 +294,32 @@ class EUIResult(TypedDict):
     conditioned_floor_area: float
     total_energy: float
     end_uses: EUIEndUses
+
+
+type TabularCell = Union[str, int, float, None]
+type TabularRow = Tuple[TabularCell, ...]
+
+
+class TabularDataResult(TypedDict):
+    values: Tuple[TabularRow, ...]
+    row_names: Tuple[str, ...]
+    column_names: Tuple[str, ...]
+
+
+type HVACSizingCell = Union[str, int, float, None]
+type HVACSizingRow = Tuple[HVACSizingCell, ...]
+
+
+class HVACSizingResult(TypedDict):
+    zone_names: Tuple[str, ...]
+    zone_peak_cool: Tuple[float, ...]
+    zone_peak_heat: Tuple[float, ...]
+    component_types: Tuple[str, ...]
+    component_properties: Tuple[Tuple[str, ...], ...]
+    component_values: Tuple[HVACSizingRow, ...]
+
+
+type ZoneSizingResult = Tuple[
+    Tuple[EnergyDataCollection, ...],
+    Tuple[EnergyDataCollection, ...],
+]

@@ -4,6 +4,7 @@ import json
 from os import PathLike
 from pathlib import Path
 from typing import (
+    Dict,
     List,
     Union,
     cast,
@@ -170,3 +171,41 @@ def load_grid_res(
             res_file,
         )
     return array
+
+
+def read_res_folder(
+    result_folder: Union[str, PathLike[str]],
+) -> Dict[str, "NDArray[np.float32]"]:
+    """Read one Radiance result folder keyed by sensor grid identifier.
+
+    Args:
+        result_folder: Folder containing ``.res`` files and ``grids_info.json``.
+
+    Returns:
+        Sensor grid identifiers mapped to one-dimensional result arrays.
+    """
+    folder = Path(result_folder)
+    if not folder.is_dir():
+        raise ValueError(
+            f"Invalid Radiance result folder: {folder}"
+        )
+
+    results: Dict[str, "NDArray[np.float32]"] = {}
+    for grid_info in grid_infos(folder):
+        grid_id = grid_identifier(grid_info)
+        res_file = folder / f"{grid_id}.res"
+        if not res_file.is_file():
+            raise FileNotFoundError(
+                f"Missing Radiance result file: {res_file}"
+            )
+
+        results[grid_id] = load_grid_res(
+            res_file,
+            grid_count(grid_info),
+            grid_info.get(
+                "start_ln",
+                0,
+            ),
+        )
+
+    return results

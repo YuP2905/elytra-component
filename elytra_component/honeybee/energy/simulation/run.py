@@ -12,7 +12,6 @@ from typing import (
 )
 if TYPE_CHECKING:
     from honeybee_energy.measure import Measure
-    from ladybug.designday import DesignDay
     from os import PathLike
     from ..typing import (
         SimulationFiles,
@@ -157,37 +156,36 @@ def write_hbjson_2_osm(
         sim_par = sim_par.duplicate()
 
 
-    sim_design_days = cast(
-        "List[DesignDay]",
-        sim_par.sizing_parameter.design_days
-    )
-    if len(sim_design_days) == 0:
-        warning_msg = None
+    if len(sim_par.sizing_parameter.design_days) == 0:
         ddy_path = epw_path.with_suffix(".ddy")
+        ddy_error: Optional[Exception] = None
 
         if ddy_path.is_file():
             try:
                 sim_par.sizing_parameter.add_from_ddy_996_004(
                     str(ddy_path)
                 )
-            except AssertionError:
-                pass
+            except (AssertionError, ValueError) as error:
+                ddy_error = error
 
-        if len(sim_design_days) == 0:
-            warning_msg = (
-                "\nNo ddy_file was input into the sim_par sizing parameters "
-                "and no design days were found in the .ddy file next to "
-                "the epw_file."
-            )
-            LOGGER.warning(warning_msg)
-        else:
-            warning_msg = (
-                "\nNo ddy_file was input into the sim_par sizing parameters "
-                "and no .ddy file was found next to the epw_file."
-            )
-            LOGGER.warning(warning_msg)
+        if len(sim_par.sizing_parameter.design_days) == 0:
+            if ddy_path.is_file() and ddy_error is not None:
+                warning_msg = (
+                    "\nNo ddy_file was input into the sim_par sizing parameters "
+                    "and the .ddy file next to the epw_file could not be parsed."
+                )
+            elif ddy_path.is_file():
+                warning_msg = (
+                    "\nNo ddy_file was input into the sim_par sizing parameters "
+                    "and no design days were found in the .ddy file next to "
+                    "the epw_file."
+                )
+            else:
+                warning_msg = (
+                    "\nNo ddy_file was input into the sim_par sizing parameters "
+                    "and no .ddy file was found next to the epw_file."
+                )
 
-        if warning_msg is not None:
             epw = EPW(
                 str(epw_path)
             )

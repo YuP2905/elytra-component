@@ -5,7 +5,6 @@ from typing import (
     TYPE_CHECKING,
 )
 if TYPE_CHECKING:
-    from matplotlib.colors import LinearSegmentedColormap
     from ..ladybug.typing import LadybugColorSetName
 
 from dataclasses import dataclass
@@ -16,7 +15,7 @@ from ..ladybug.visualization.config import (
     VISUALIZATION_CONFIG
 )
 from ..ladybug.utils import (
-    get_ladybug_cmap,
+    get_ladybug_color_hexes,
 )
 
 #! Here, using ladybug's epw map is a temporary solution
@@ -29,12 +28,12 @@ class LadybugConfig:
     DEFAULT_EPW_MAP_URL: Final[str]
     LADYBUG_COLORSET_NAMES: Final[Tuple["LadybugColorSetName", ...]]
     DEFAULT_COLORSET: Final["LadybugColorSetName"]
-    DEFAULT_CMAP: Final["LinearSegmentedColormap"]
+    DEFAULT_COLOR_HEXES: Final[Tuple[str, ...]]
 
 
 LADYBUG_CONFIG = LadybugConfig(
     DEFAULT_EPW_MAP_URL = _DEFAULT_EPW_MAP_URL,
     DEFAULT_COLORSET = VISUALIZATION_CONFIG.DEFAULT_COLORSET,
     LADYBUG_COLORSET_NAMES = VISUALIZATION_CONFIG.LADYBUG_COLORSET_NAMES,
-    DEFAULT_CMAP = get_ladybug_cmap(VISUALIZATION_CONFIG.DEFAULT_COLORSET),
+    DEFAULT_COLOR_HEXES = get_ladybug_color_hexes(VISUALIZATION_CONFIG.DEFAULT_COLORSET),
 )

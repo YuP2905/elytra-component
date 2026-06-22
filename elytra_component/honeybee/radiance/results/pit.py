@@ -15,10 +15,7 @@ if TYPE_CHECKING:
     from ..typing import PitResult
 
 from .common import (
-    grid_count,
-    grid_identifier,
-    grid_infos,
-    load_grid_res,
+    read_res_folder,
 )
 
 
@@ -34,31 +31,7 @@ def read_pit_folder(
     Returns:
         Sensor grid identifiers mapped to point-in-time result arrays.
     """
-    folder = Path(result_folder)
-    if not folder.is_dir():
-        raise ValueError(
-            f"Invalid point-in-time result folder: {folder}"
-        )
-
-    results: Dict[str, "NDArray[np.float32]"] = {}
-    for grid_info in grid_infos(folder):
-        grid_id = grid_identifier(grid_info)
-        res_file = folder / f"{grid_id}.res"
-        if not res_file.is_file():
-            raise FileNotFoundError(
-                f"Missing point-in-time result file: {res_file}"
-            )
-
-        results[grid_id] = load_grid_res(
-            res_file,
-            grid_count(grid_info),
-            grid_info.get(
-                "start_ln",
-                0,
-            ),
-        )
-
-    return results
+    return read_res_folder(result_folder)
 
 
 def read_pit_results(

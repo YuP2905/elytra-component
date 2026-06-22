@@ -6,20 +6,19 @@ from typing import (
 )
 
 from ladybug.color import Colorset
-from matplotlib.colors import LinearSegmentedColormap
 
 from .typing import LadybugColorSetName
 
-def get_ladybug_cmap(
+def get_ladybug_color_hexes(
     colorset_name: LadybugColorSetName,
-) -> LinearSegmentedColormap:
-    """Create a matplotlib colormap from a Ladybug color set.
+) -> Tuple[str, ...]:
+    """Return hex colors from a Ladybug color set.
 
     Args:
         colorset_name: Ladybug color set name.
 
     Returns:
-        Matplotlib linear segmented colormap.
+        Hex colors ordered by the Ladybug color set.
     """
 
     colorset_names = cast(
@@ -28,11 +27,8 @@ def get_ladybug_cmap(
     )
     cs_index = colorset_names.index(colorset_name)
     cs = Colorset()[cs_index]
-    hex_colors = [
+    hex_colors = tuple(
         c.to_hex()
         for c in cs
-    ]
-    return LinearSegmentedColormap.from_list(
-        colorset_name,
-        hex_colors,
     )
+    return hex_colors

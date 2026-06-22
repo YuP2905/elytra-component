@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         CertainIrradiance,
     )
     from ladybug.datacollection import HourlyContinuousCollection
+    from ladybug.wea import Wea
 
 
 type RecipeType = Literal[
@@ -75,6 +76,11 @@ type SimulationScheduleInput = Union[
     "ScheduleRuleset",
     "ScheduleFixedInterval",
 ]
+type WeaInput = Union[
+    str,
+    PathLike[str],
+    "Wea",
+]
 type SkyInput = Union[
     str,
     "CIE",
@@ -94,6 +100,10 @@ type PointInTimeMetric = Union[
     Literal["irradiance"],
     Literal["luminance"],
     Literal["radiance"],
+]
+type IrradianceOutputType = Literal[
+    "solar",
+    "visible",
 ]
 
 
@@ -126,6 +136,36 @@ class PitResult(TypedDict):
     results: List[Path]
     grids_info: List[Path]
     result_files: Dict[str, Path]
+
+
+class DaylightFactorResult(TypedDict):
+    project_folder: Path
+    simulation_folder: Path
+    results: Path
+
+
+class AnnualIrradianceResult(TypedDict):
+    project_folder: Path
+    simulation_folder: Path
+    results: Path
+    results_direct: Path
+    average_irradiance: Path
+    peak_irradiance: Path
+    cumulative_radiation: Path
+
+
+class CumulativeRadiationResult(TypedDict):
+    project_folder: Path
+    simulation_folder: Path
+    average_irradiance: Path
+    cumulative_radiation: Path
+
+
+class DirectSunHoursResult(TypedDict):
+    project_folder: Path
+    simulation_folder: Path
+    direct_sun_hours: Path
+    cumulative_sun_hours: Path
 
 
 class SensorGridInfo(TypedDict, total=False):
